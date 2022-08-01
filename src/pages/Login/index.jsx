@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useEffect} from "react";
 import {useDispatch, useSelector} from "react-redux";
 import {Navigate} from "react-router-dom";
 import Typography from "@mui/material/Typography";
@@ -14,7 +14,7 @@ import {fetchAuth, selectIsAuth} from "../../redux/slices/auth";
 export const Login = () => {
   const isAuth = useSelector(selectIsAuth);
   const dispatch = useDispatch();
-  const {register, handleSubmit, setError, formState: {errors, isValid}} = useForm({
+  const {register, handleSubmit, formState: {errors, isValid}} = useForm({
     defaultValues: {
       email: '',
       password: ''
@@ -22,9 +22,17 @@ export const Login = () => {
     mode: 'onChange',
   });
 
-  const onSubmit = (values) => {
-    dispatch(fetchAuth(values));
-  }
+  const onSubmit = async (values) => {
+    const data = await dispatch(fetchAuth(values));
+
+    if (!data.payload) {
+      return alert('Не удалось авторизоваться');
+    }
+
+    if ('token' in data.payload) {
+      window.localStorage.setItem('token', data.payload.token);
+    }
+  };
 
   if (isAuth) {
     return <Navigate to="/"/>;
@@ -39,15 +47,16 @@ export const Login = () => {
         <TextField
           className={styles.field}
           label="E-Mail"
+          type="email"
           error={Boolean(errors.email?.message)}
           helperText={errors.email?.message}
           {...register('email', {required: 'Укажите почту'})}
           fullWidth
         />
         <TextField className={styles.field} label="Пароль" fullWidth helperText={errors.password?.message}
-                   error={Boolean(errors.password?.message)}
+                   error={Boolean(errors.password?.message)} type="password"
                    {...register('password', {required: 'Укажите пароль'})}/>
-        <Button type="submit" size="large" variant="contained" fullWidth>
+        <Button disabled={!isValid} type="submit" size="large" variant="contained" fullWidth>
           Войти
         </Button>
       </form>
